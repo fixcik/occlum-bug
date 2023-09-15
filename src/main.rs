@@ -10,8 +10,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "e785a7d529d589f13e610548b54ac636e30ff4c4e4d834b903b460"
     )?;
 
+    // the error is unreliable, we are trying to catch it
     for i in 0..1000 {
         println!("Handle: {}", i);
+        // several thread reads same file
         let handlers = (1..4)
             .map(|_| {
                 thread::spawn(|| -> Result<_, std::io::Error> {
@@ -27,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         for handler in handlers {
             match handler.join().unwrap() {
-                Ok(data) => assert_eq!(b"e785a7", &data),
+                Ok(data) => assert_eq!(b"e785a7", &data), // Here we catch panic, data equals [0,0,0,0,0,0]
                 Err(e) => panic!("Error: {:?}", e),
             }
         }
