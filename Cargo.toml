@@ -6,5 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+arrow-format = "0.8.1"
 arrow2 = { version = "0.17.4", features = ["io_ipc"] }
 memmap = "0.7.0"

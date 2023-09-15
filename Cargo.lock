@@ -185,6 +185,7 @@ dependencies = [
 name = "occlum-bug"
 version = "0.1.0"
 dependencies = [
+ "arrow-format",
  "arrow2",
  "memmap",
 ]

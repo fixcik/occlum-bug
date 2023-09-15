@@ -1,6 +1,3 @@
-use std::fs::File;
-use std::thread::{self, JoinHandle};
-
 use arrow2::io::ipc::{
     read,
     write::{self, WriteOptions},
@@ -10,8 +7,8 @@ use arrow2::{
     chunk::Chunk,
     datatypes::{DataType, Field, Schema},
 };
-
-// use std::io::Write;
+use std::fs::File;
+use std::thread::{self, JoinHandle};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let a = Int32Array::from(&(0..10000).map(|i| Some(i)).collect::<Vec<_>>());
@@ -26,6 +23,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Field::new("c2", DataType::Int32, true),
     ]);
 
+    let schema_copy = schema.clone();
+
     let chunk = Chunk::try_new(vec![a.boxed(), b.boxed()])?;
 
     let options = WriteOptions { compression: None };
@@ -37,9 +36,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     writer.write(&chunk, None)?;
     writer.finish()?;
 
-    for i in 0..100 {
+    for i in 0..1000 {
         println!("Handle sample {}", i);
-        let handlers = (1..3)
+        let handlers = (1..4)
             .map(|_| {
                 thread::spawn(
                     || -> Result<_, Box<dyn std::error::Error + Send + 'static>> {
@@ -58,8 +57,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         for handler in handlers {
             // Wait for the thread to finish. Returns a result.
             match handler.join().unwrap() {
-                Ok(metadata) => println!("Metadata: {:?}", metadata),
-                Err(e) => println!("Error: {:?}", e),
+                Ok(metadata) => assert_eq!(metadata.schema, schema_copy),
+                Err(e) => panic!("Error: {:?}", e),
             }
         }
     }
