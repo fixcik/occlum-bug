@@ -1,63 +1,33 @@
-use arrow2::io::ipc::{
-    read,
-    write::{self, WriteOptions},
-};
-use arrow2::{
-    array::{Int32Array, Utf8Array},
-    chunk::Chunk,
-    datatypes::{DataType, Field, Schema},
-};
 use std::fs::File;
+use std::io::prelude::*;
+use std::io::Read;
 use std::thread::{self, JoinHandle};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let a = Int32Array::from(&(0..10000).map(|i| Some(i)).collect::<Vec<_>>());
-    let b: Utf8Array<i32> = Utf8Array::from(
-        &(0..10000)
-            .map(|i| Some(format!("string{}", i)))
-            .collect::<Vec<_>>(),
-    );
-
-    let schema = Schema::from(vec![
-        Field::new("c1", DataType::Int32, true),
-        Field::new("c2", DataType::Int32, true),
-    ]);
-
-    let schema_copy = schema.clone();
-
-    let chunk = Chunk::try_new(vec![a.boxed(), b.boxed()])?;
-
-    let options = WriteOptions { compression: None };
-
-    let file = File::create("/tmp/file.ipc")?;
-    let mut writer = write::FileWriter::new(file, schema, None, options);
-
-    writer.start()?;
-    writer.write(&chunk, None)?;
-    writer.finish()?;
+    let mut file = File::create("/file.txt")?;
+    writeln!(
+        file,
+        "e785a7d529d589f13e610548b54ac636e30ff4c4e4d834b903b460"
+    )?;
 
     for i in 0..1000 {
-        println!("Handle sample {}", i);
+        println!("Handle: {}", i);
         let handlers = (1..4)
             .map(|_| {
-                thread::spawn(
-                    || -> Result<_, Box<dyn std::error::Error + Send + 'static>> {
-                        let file = File::open("/tmp/file.ipc").unwrap();
-                        let mmap = unsafe { memmap::Mmap::map(&file).unwrap() };
-                        let metadata =
-                            read::read_file_metadata(&mut std::io::Cursor::new(mmap.as_ref()))
-                                .unwrap();
-
-                        Ok(metadata)
-                    },
-                )
+                thread::spawn(|| -> Result<_, std::io::Error> {
+                    let file = File::open("/file.txt").unwrap();
+                    let mmap = unsafe { memmap::Mmap::map(&file).unwrap() };
+                    let mut cursor = std::io::Cursor::new(mmap.as_ref());
+                    let mut buffer: [u8; 6] = [0; 6];
+                    cursor.read_exact(&mut buffer)?;
+                    Ok(buffer)
+                })
             })
             .collect::<Vec<JoinHandle<Result<_, _>>>>();
 
         for handler in handlers {
-            // Wait for the thread to finish. Returns a result.
             match handler.join().unwrap() {
-                Ok(metadata) => assert_eq!(metadata.schema, schema_copy),
+                Ok(data) => assert_eq!("e785a7", std::str::from_utf8(&data)?),
                 Err(e) => panic!("Error: {:?}", e),
             }
         }
