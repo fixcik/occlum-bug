@@ -1,0 +1,12 @@
+includes:
+  - base.yaml
+targets:
+  - target: /bin
+    copy:
+      - from: ..
+        files: [occlum-bug]
+  - target: /
+    mkdirs:
+      - dev
+      - etc
+

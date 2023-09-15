@@ -1,0 +1,56 @@
+{
+  "resource_limits": {
+    "max_num_of_threads": 32,
+    "kernel_space_stack_size": "32MB",
+    "kernel_space_heap_size": "64MB",
+    "user_space_size": "128MB"
+  },
+  "process": {
+    "default_stack_size": "4MB",
+    "default_heap_size": "16MB",
+    "default_mmap_size": "32MB"
+  },
+  "entry_points": ["/bin"],
+  "env": {
+    "default": ["OCCLUM=yes"],
+    "untrusted": []
+  },
+  "metadata": {
+    "product_id": 1,
+    "version_number": 0,
+    "debuggable": true,
+    "enable_kss": true,
+    "family_id": {
+      "high": "0x0",
+      "low": "0x0"
+    },
+    "ext_prod_id": {
+      "high": "0x0",
+      "low": "0x0"
+    },
+    "pkru": 0
+  },
+  "mount": [
+    {
+      "target": "/",
+      "type": "unionfs",
+      "options": {
+        "layers": [
+          {
+            "target": "/",
+            "type": "sefs",
+            "source": "./build/mount/__ROOT",
+            "options": {
+              "MAC": ""
+            }
+          },
+          {
+            "target": "/",
+            "type": "sefs",
+            "source": "./run/mount/__ROOT"
+          }
+        ]
+      }
+    }
+  ]
+}
